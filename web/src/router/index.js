@@ -4,6 +4,8 @@ import RanklistIndex from '../views/ranklist/RanklistIndex'
 import RecordIndex from '../views/record/RecordIndex'
 import UserBotIndex from '../views/user/bots/UserBotIndex'
 import NotFound from '../views/error/NotFound'
+import UserAccountLoginView from '@/views/user/account/UserAccountLoginView'
+import UserAccountRegisterView from '@/views/user/account/UserAccountRegisterView'
 
 const routes = [
   {
@@ -40,6 +42,16 @@ const routes = [
     path: "/:catchAll(.*)",
     redirect: "/error/",
   },
+  {
+    path: "/user/account/register/",
+    name: "account_register",
+    component: UserAccountRegisterView,
+  },
+  {
+    path: "/user/account/login/",
+    name: "account_login",
+    component: UserAccountLoginView,
+  }
 ]
 
 const router = createRouter({
