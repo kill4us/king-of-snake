@@ -6,7 +6,7 @@ export default {
         username: "",
         photo: "",
         token: "",
-        is_login: "false",
+        is_login: false,
     },
     getters: {
     },
