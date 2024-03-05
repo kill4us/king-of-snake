@@ -1,4 +1,4 @@
-package com.kill4us_kob.backend.service.impl.user.account;
+package com.kill4us_kob.backend.controller.user.bot;
 
 import com.kill4us_kob.backend.pojo.bot;
 import com.kill4us_kob.backend.service.user.bot.GetlistService;
