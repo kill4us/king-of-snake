@@ -1,5 +1,8 @@
 package com.kill4us_kob.backend.consumer;
 
+import com.alibaba.fastjson.JSONObject;
+import com.kill4us_kob.backend.consumer.utils.Game;
+import com.kill4us_kob.backend.consumer.utils.JwtAuthentication;
 import com.kill4us_kob.backend.mapper.UserMapper;
 import com.kill4us_kob.backend.pojo.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,13 +12,18 @@ import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
 @ServerEndpoint("/websocket/{token}")  // 注意不要以'/'结尾
 public class WebSocketServer {
 
     private static ConcurrentHashMap<Integer, WebSocketServer> users = new ConcurrentHashMap<>();
+
+    private static CopyOnWriteArrayList<User> matchpool = new CopyOnWriteArrayList<>();
+
     private User user;
     private Session session = null;
     private static UserMapper userMapper;
@@ -25,13 +33,19 @@ public class WebSocketServer {
     }
 
     @OnOpen
-    public void onOpen(Session session, @PathParam("token") String token) {
+    public void onOpen(Session session, @PathParam("token") String token) throws IOException {
         // 建立连接
         this.session = session;
         System.out.println("connected!");
-        Integer userId = Integer.parseInt(token);
+        Integer userId = JwtAuthentication.getUserId(token);
         this.user = userMapper.selectById(userId);
-        users.put(userId, this);
+        if (this.user != null) {
+            users.put(userId, this);
+            System.out.println(user);
+        } else {
+            this.session.close();
+        }
+
     }
 
     @OnClose
@@ -41,14 +55,56 @@ public class WebSocketServer {
         if (users != null)
         {
             users.remove(this.user.getId());
+            matchpool.remove(this.user);
         }
     }
 
+    private void startMatching() {
+        System.out.println("start matching!");
+        matchpool.add(this.user);
+
+        while (matchpool.size() >= 2) {
+            Iterator<User> it = matchpool.iterator();
+            User a = it.next(), b = it.next();
+            matchpool.remove(a);
+            matchpool.remove(b);
+
+            Game game = new Game(13, 14, 20);
+            game.createMap();
+
+            JSONObject respA = new JSONObject();
+            respA.put("event", "start matching!");
+            respA.put("opponent_username", b.getUsername());
+            respA.put("opponent_photo", b.getPhoto());
+            respA.put("gamemap",game.getG());
+            users.get(a.getId()).sendMessage(respA.toJSONString());
+
+            JSONObject respB = new JSONObject();
+            respB.put("event", "start matching!");
+            respB.put("opponent_username", a.getUsername());
+            respB.put("opponent_photo", a.getPhoto());
+            respB.put("gamemap", game.getG());
+            users.get(b.getId()).sendMessage(respB.toJSONString());
+        }
+    }
+
+    private void stopMatching() {
+        System.out.println("stop matching");
+        matchpool.remove(this.user);
+    }
+
     @OnMessage
-    public void onMessage(String message, Session session) {
+    public void onMessage(String message, Session session) {  //  当作路由使用
         // 从Client接收消息
         System.out.println("receive message!");
-
+        JSONObject data = JSONObject.parseObject(message);
+        String event = data.getString("event");  //  将前端点击匹配按钮的event取出
+        System.out.println(event);
+        if ("start-matching".equals(event)) {
+            startMatching();
+        } else if ("stop-matching".equals(event)) {
+            stopMatching();
+        }
     }
 
     @OnError

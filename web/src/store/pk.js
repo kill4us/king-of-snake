@@ -6,6 +6,7 @@ export default {
         opponent_username: "",
         opponent_photo: "",
         status: "matching",
+        gamemap: null,
     },
     getters: {
     },
@@ -21,6 +22,9 @@ export default {
         {
             state.status = status;
         },
+        updateGamemap(state, gamemap) {
+            state.gamemap = gamemap;
+        }
     },
     actions: {
     },
