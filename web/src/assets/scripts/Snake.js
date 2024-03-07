@@ -72,9 +72,7 @@ export class Snake extends gameObject {
         for (let i = k; i > 0; i --) {  //  把每个小球向后移动一位，第一位不变，相当于头部多了一个自己的复制   1   2   3
             this.cells[i] = JSON.parse(JSON.stringify(this.cells[i - 1]));  //  深层复制一遍，避免混淆     1   1   2    3
         }
-        if (!this.gamemap.check_valid(this.next_cell)) {  //  下一步操作非法
-            this.status = "die";
-        }
+        
     }
 
     update_move() {  //  更新蛇的移动  从蛇头创建一个新的头，让新的头向目的地移动 蛇的身体不变

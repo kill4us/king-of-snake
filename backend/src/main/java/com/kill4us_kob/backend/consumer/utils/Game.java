@@ -2,10 +2,9 @@ package com.kill4us_kob.backend.consumer.utils;
 
 import com.alibaba.fastjson.JSONObject;
 import com.kill4us_kob.backend.consumer.WebSocketServer;
+import com.kill4us_kob.backend.pojo.record;
 
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Game extends Thread {  //  多线程
@@ -158,15 +157,78 @@ public class Game extends Thread {  //  多线程
         WebSocketServer.users.get(playerB.getId()).sendMessage(message);
     }
 
+    private String getMapString() {
+        StringBuilder res = new StringBuilder();
+        for (int i = 0; i < rows; i ++ ){
+            for (int j = 0; j < cols; j ++ ) {
+                res.append(g[i][j]);
+            }
+        }
+        return res.toString();
+    }
+
+    private void saveToDatabase() {
+        record record = new record(
+                null,
+                playerA.getId(),
+                playerA.getSx(),
+                playerA.getSy(),
+                playerB.getId(),
+                playerB.getSx(),
+                playerB.getSy(),
+                playerA.getStepString(),
+                playerB.getStepString(),
+                getMapString(),
+                loser,
+                new Date()
+        );
+
+        WebSocketServer.recordMapper.insert(record);
+    }
+
     private void sendResult() {  //  向两个client返回结果
         JSONObject resp = new JSONObject();
         resp.put("event", "result");
         resp.put("loser", loser);
+        saveToDatabase();
         sendAllMessage(resp.toJSONString());
     }
 
-    private void judge() {  //  判断client的操作
+    private boolean check_valid(List<Cell> cellsA, List<Cell> cellsB) {
+        int n = cellsA.size();
+        Cell cell = cellsA.get(n - 1);
+        if (g[cell.x][cell.y] == 1) {
+            return false;
+        }
+        for (int i = 0; i < n - 1; i ++ ) {
+            if (cellsA.get(i).x == cell.x && cellsA.get(i).y == cell.y) {
+                return false;
+            }
+        }
 
+        for (int i = 0; i < n - 1; i ++ ) {
+            if (cellsB.get(i).x == cell.x && cellsB.get(i).y == cell.y) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void judge() {  //  判断client的操作
+        List<Cell> cellsA = playerA.getCells();
+        List<Cell> cellsB = playerB.getCells();
+        boolean validA = check_valid(cellsA, cellsB);
+        boolean validB = check_valid(cellsB, cellsA);
+        if (!validA || !validB) {
+            status = "finished";
+            if (!validA && !validB) {
+                loser = "all";
+            } else if (!validA) {
+                loser = "A";
+            } else {
+                loser = "B";
+            }
+        }
     }
 
     private void sendMove() {  //  向前端返回移动操作信息

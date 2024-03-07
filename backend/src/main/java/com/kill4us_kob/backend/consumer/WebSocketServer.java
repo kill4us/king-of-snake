@@ -3,6 +3,7 @@ package com.kill4us_kob.backend.consumer;
 import com.alibaba.fastjson.JSONObject;
 import com.kill4us_kob.backend.consumer.utils.Game;
 import com.kill4us_kob.backend.consumer.utils.JwtAuthentication;
+import com.kill4us_kob.backend.mapper.RecordMapper;
 import com.kill4us_kob.backend.mapper.UserMapper;
 import com.kill4us_kob.backend.pojo.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +28,17 @@ public class WebSocketServer {
     private User user;
     private Session session = null;
     private static UserMapper userMapper;
+    public static RecordMapper recordMapper;
 
     private Game game = null;
 
     @Autowired
     public void setUserMapper(UserMapper userMapper) {
         WebSocketServer.userMapper = userMapper;
+    }
+    @Autowired
+    public void setRecordMapper(RecordMapper recordMapper) {
+        WebSocketServer.recordMapper = recordMapper;
     }
 
     @OnOpen
