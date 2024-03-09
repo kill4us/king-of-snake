@@ -36,6 +36,9 @@ public class WebSocketServer {
 
     private Game game = null;
 
+    private final static String addPlayerUrl = "http://127.0.0.1:3001/player/add/";
+    private final static String removePlayerUrl = "http://127.0.0.1:3001/player/remove/";
+
     @Autowired
     public void setUserMapper(UserMapper userMapper) {
         WebSocketServer.userMapper = userMapper;
@@ -75,16 +78,20 @@ public class WebSocketServer {
         }
     }
 
-    private void startGame(Integer aId, Integer bId) {
+    public static void startGame(Integer aId, Integer bId) {
         User a = userMapper.selectById(aId);
         User b = userMapper.selectById(bId);
 
         Game game = new Game(13, 14, 20, a.getId(), b.getId());
         game.createMap();
 
+        if (users.get(a.getId()) != null) {
+            users.get(a.getId()).game = game;
+        }
+        if (users.get(b.getId()) != null) {
+            users.get(b.getId()).game = game;
+        }
 
-        users.get(a.getId()).game = game;
-        users.get(b.getId()).game = game;
         game.start();  //  开启多线程
 
         JSONObject respGame = new JSONObject();
@@ -102,26 +109,34 @@ public class WebSocketServer {
         respA.put("opponent_username", b.getUsername());
         respA.put("opponent_photo", b.getPhoto());
         respA.put("game",respGame);
-        users.get(a.getId()).sendMessage(respA.toJSONString());
+        if (users.get(a.getId()) != null) {
+            users.get(a.getId()).sendMessage(respA.toJSONString());
+        }
 
         JSONObject respB = new JSONObject();
         respB.put("event", "start matching!");
         respB.put("opponent_username", a.getUsername());
         respB.put("opponent_photo", a.getPhoto());
         respB.put("game", respGame);
-        users.get(b.getId()).sendMessage(respB.toJSONString());
+        if (users.get(b.getId()) != null) {
+            users.get(b.getId()).sendMessage(respB.toJSONString());
+        }
     }
 
     private void startMatching() {
         System.out.println("start matching!");
         MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
         data.add("user_id", this.user.getId().toString());
-        data.add("rating", this.user.get);
+        data.add("rating", this.user.getRating().toString());
+        restTemplate.postForObject(addPlayerUrl, data, String.class);
     }
 
     private void stopMatching() {
         System.out.println("stop matching");
         matchpool.remove(this.user);
+        MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
+        data.add("user_id", this.user.getId().toString());
+        restTemplate.postForObject(removePlayerUrl, data, String.class);
     }
 
     private void move (int direction) {
