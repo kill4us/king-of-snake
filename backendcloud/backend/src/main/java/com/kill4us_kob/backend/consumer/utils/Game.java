@@ -2,7 +2,11 @@ package com.kill4us_kob.backend.consumer.utils;
 
 import com.alibaba.fastjson.JSONObject;
 import com.kill4us_kob.backend.consumer.WebSocketServer;
+import com.kill4us_kob.backend.pojo.bot;
 import com.kill4us_kob.backend.pojo.record;
+import com.sun.javafx.scene.control.behavior.SplitMenuButtonBehavior;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -21,16 +25,36 @@ public class Game extends Thread {  //  多线程
     private String status = "playing";  //  正在进行中  => finished
     private String loser = "";  //  all: 平局, "A", "B"
 
+    private final static String addBotUrl = "http://127.0.0.1:3002/bot/add/";
+
 
     private ReentrantLock lock = new ReentrantLock();
 
-    public Game(Integer rows, Integer cols, Integer inner_walls_count, Integer idA, Integer idB) {
+    public Game(Integer rows,
+                Integer cols,
+                Integer inner_walls_count,
+                Integer idA,
+                Integer idB,
+                bot botA,
+                bot botB) {
         this.rows = rows;
         this.cols = cols;
         this.inner_walls_count = inner_walls_count;
         this.g = new int[rows][cols];
-        playerA = new Player(idA, rows - 2, 1, new ArrayList<>());
-        playerB = new Player(idB, 1, cols - 2, new ArrayList<>());
+        Integer a_botId = -1, b_botId = -1;
+        String a_botCode = "", b_botCode = "";
+
+        if (botA != null) {
+            a_botId = botA.getId();
+            a_botCode = botA.getContent();
+        }
+        if (botB != null) {
+            b_botId = botB.getId();
+            b_botCode = botB.getContent();
+        }
+
+        playerA = new Player(idA, rows - 2, 1, new ArrayList<>(), a_botId, a_botCode);
+        playerB = new Player(idB, 1, cols - 2, new ArrayList<>(), b_botId, b_botCode);
     }
 
     public Player getPlayerA() {
@@ -123,12 +147,48 @@ public class Game extends Thread {  //  多线程
         }
     }
 
+    private String getInput(Player player) {  //  将当前的局面信息编码成字符串
+        Player me, you;
+        if (playerA.getId().equals(player.getId())) {
+            me = playerA;
+            you = playerB;
+        } else {
+            me = playerB;
+            you = playerA;
+        }
+
+        return getMapString() + "#" +
+                me.getSx() + "#" +
+                me.getSy() + "#(" +
+                me.getStepString() + ")#" +
+                you.getSx() + "#" +
+                you.getSy() + "#(" +
+                you.getStepString() + ")";
+
+
+    }
+
+    private void sendBotCode(Player player) {
+        if (player.getBotId() == -1) return;  //  人工操作不用执行代码
+        MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
+        data.add("user_id", player.getId().toString());
+        data.add("bot_code", player.getBotCode());
+        data.add("input", getInput(player));
+
+        WebSocketServer.restTemplate.postForObject(addBotUrl, data, String.class);
+
+    }
+
     private boolean nextStep() {
         try {
             Thread.sleep(200);  //  每秒走五格，200ms走一格，每次先sleep两百毫秒，防止多次操作被覆盖
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        sendBotCode(playerA);
+        sendBotCode(playerB);
+
         //  等待两个玩家的下一步操作
         for (int i = 0; i < 5; i++) {
             try {

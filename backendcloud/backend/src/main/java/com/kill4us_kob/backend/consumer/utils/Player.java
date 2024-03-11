@@ -16,6 +16,8 @@ public class Player {
     private Integer sx;
     private Integer sy;
     private List<Integer> step;  //  存储玩家每一步的方向
+    private Integer botId;  //  -1表示人工,否则表示代码操作
+    private String botCode;
 
     private boolean check_tail_increasing(int step) {
         if (step <= 10) return true;

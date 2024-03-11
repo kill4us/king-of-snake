@@ -3,9 +3,11 @@ package com.kill4us_kob.backend.consumer;
 import com.alibaba.fastjson.JSONObject;
 import com.kill4us_kob.backend.consumer.utils.Game;
 import com.kill4us_kob.backend.consumer.utils.JwtAuthentication;
+import com.kill4us_kob.backend.mapper.BotMapper;
 import com.kill4us_kob.backend.mapper.RecordMapper;
 import com.kill4us_kob.backend.mapper.UserMapper;
 import com.kill4us_kob.backend.pojo.User;
+import com.kill4us_kob.backend.pojo.bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -29,15 +31,22 @@ public class WebSocketServer {
     private static CopyOnWriteArrayList<User> matchpool = new CopyOnWriteArrayList<>();
 
     private User user;
+    private bot bot;
     private Session session = null;
     private static UserMapper userMapper;
     public static RecordMapper recordMapper;
-    private static RestTemplate restTemplate;
+    public static RestTemplate restTemplate;
+    private static BotMapper botMapper;
 
     private Game game = null;
 
     private final static String addPlayerUrl = "http://127.0.0.1:3001/player/add/";
     private final static String removePlayerUrl = "http://127.0.0.1:3001/player/remove/";
+
+    @Autowired
+    public void setBotMapper(BotMapper botMapper) {
+        WebSocketServer.botMapper = botMapper;
+    }
 
     @Autowired
     public void setUserMapper(UserMapper userMapper) {
@@ -78,11 +87,22 @@ public class WebSocketServer {
         }
     }
 
-    public static void startGame(Integer aId, Integer bId) {
+    public static void startGame(Integer aId, Integer bId, Integer a_botId, Integer b_botId) {
         User a = userMapper.selectById(aId);
         User b = userMapper.selectById(bId);
+        bot aBot = botMapper.selectById(a_botId);
+        bot bBot = botMapper.selectById(b_botId);
 
-        Game game = new Game(13, 14, 20, a.getId(), b.getId());
+        Game game = new Game(
+                13,
+                14,
+                20,
+                a.getId(),
+                b.getId(),
+                aBot,
+                bBot);
+
+
         game.createMap();
 
         if (users.get(a.getId()) != null) {
@@ -123,11 +143,12 @@ public class WebSocketServer {
         }
     }
 
-    private void startMatching() {
+    private void startMatching(Integer botId) {
         System.out.println("start matching!");
         MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
         data.add("user_id", this.user.getId().toString());
         data.add("rating", this.user.getRating().toString());
+        data.add("bot_id", botId.toString());
         restTemplate.postForObject(addPlayerUrl, data, String.class);
     }
 
@@ -141,9 +162,13 @@ public class WebSocketServer {
 
     private void move (int direction) {
         if (game.getPlayerA().getId().equals(user.getId())) {
-            game.setNextStepA(direction);
+            if (game.getPlayerA().getBotId().equals(-1)) {  //  人工操作
+                game.setNextStepA(direction);
+            }
         } else if (game.getPlayerB().getId().equals(user.getId())) {
-            game.setNextStepB(direction);
+            if (game.getPlayerB().getBotId().equals(-1)) {
+                game.setNextStepB(direction);
+            }
         }
     }
 
@@ -155,7 +180,7 @@ public class WebSocketServer {
         String event = data.getString("event");  //  将前端点击匹配按钮的event取出
         System.out.println(event);
         if ("start-matching".equals(event)) {
-            startMatching();
+            startMatching(data.getInteger("bot_id"));
         } else if ("stop-matching".equals(event)) {
             stopMatching();
         } else if ("move".equals(event)) {
