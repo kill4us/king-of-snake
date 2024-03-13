@@ -2,6 +2,7 @@ package com.kill4us_kob.backend.consumer.utils;
 
 import com.alibaba.fastjson.JSONObject;
 import com.kill4us_kob.backend.consumer.WebSocketServer;
+import com.kill4us_kob.backend.pojo.User;
 import com.kill4us_kob.backend.pojo.bot;
 import com.kill4us_kob.backend.pojo.record;
 import com.sun.javafx.scene.control.behavior.SplitMenuButtonBehavior;
@@ -231,7 +232,27 @@ public class Game extends Thread {  //  多线程
         return res.toString();
     }
 
+    private void updateUserRating(Player player, Integer rating) {
+        User user = WebSocketServer.userMapper.selectById(player.getId());
+        user.setRating(rating);
+        WebSocketServer.userMapper.updateById(user);
+    }
+
     private void saveToDatabase() {
+
+        Integer ratingA = WebSocketServer.userMapper.selectById(playerA.getId()).getRating();
+        Integer ratingB = WebSocketServer.userMapper.selectById(playerB.getId()).getRating();
+
+        if ("A".equals(loser)) {
+            ratingA -= 20;
+            ratingB += 30;
+        } else if ("B".equals(loser)) {
+            ratingB -= 20;
+            ratingA += 30;
+        }
+
+        updateUserRating(playerA, ratingA);
+        updateUserRating(playerB, ratingB);
         record record = new record(
                 null,
                 playerA.getId(),
