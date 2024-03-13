@@ -38,7 +38,7 @@ public class WebSocketServer {
     public static RestTemplate restTemplate;
     private static BotMapper botMapper;
 
-    private Game game = null;
+    public Game game = null;
 
     private final static String addPlayerUrl = "http://127.0.0.1:3001/player/add/";
     private final static String removePlayerUrl = "http://127.0.0.1:3001/player/remove/";
