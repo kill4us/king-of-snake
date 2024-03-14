@@ -35,7 +35,7 @@
             <li class="page-item" @click="click_page(-2)">
                 <a class="page-link" href="#">前一页</a>
             </li>
-            <li :class="'page-item' + page.is_active" v-for="page in pages" :key="page.number" @click="click_page(page.number)">
+            <li :class="'page-item ' + page.is_active" v-for="page in pages" :key="page.number" @click="click_page(page.number)">
                 <a class="page-link" href="#">{{ page.number }}</a>
             </li>
             <li class="page-item" @click="click_page(-1)">

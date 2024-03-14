@@ -1,5 +1,6 @@
 package com.kill4us_kob.backend.service.impl.user.bot;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kill4us_kob.backend.mapper.BotMapper;
 import com.kill4us_kob.backend.pojo.User;
 import com.kill4us_kob.backend.pojo.bot;
@@ -61,6 +62,13 @@ public class AddServiceImpl implements AddService {
 
         if (content.length() > 10000) {
             map.put("error_message", "代码长度过长");
+            return map;
+        }
+
+        QueryWrapper<bot> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", user.getId());
+        if (botMapper.selectCount(queryWrapper) >= 10) {
+            map.put("error_message", "最多只能创建10个bot!");
             return map;
         }
 
