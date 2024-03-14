@@ -13,7 +13,7 @@ public class RemoveContronller {
     @Autowired
     private RemoveService removeService;
 
-    @PostMapping("/user/bots/remove/")
+    @PostMapping("/api/user/bots/remove/")
     public Map<String, String> remove(@RequestParam Map<String, String> data) {
         return removeService.remove(data);
     }

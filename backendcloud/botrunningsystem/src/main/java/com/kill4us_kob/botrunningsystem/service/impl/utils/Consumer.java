@@ -8,7 +8,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 @Component
 public class Consumer extends Thread {
@@ -38,7 +42,7 @@ public class Consumer extends Thread {
     }
 
     private String addUid(String code, String uid) {  //  在code中的Bot类名后加上uid
-        int k = code.indexOf(" implements com.kill4us_kob.botrunningsystem.utils.BotInterface");
+        int k = code.indexOf(" implements java.util.function.Supplier<Integer>");
         return code.substring(0, k) + uid + code.substring(k);  //  先返回code前面的，再返回uid，再返回code后面的
     }
 
@@ -49,12 +53,21 @@ public class Consumer extends Thread {
 
 
 
-        BotInterface botInterface = Reflect.compile(
+        Supplier<Integer> botInterface = Reflect.compile(
                 "com.kill4us_kob.botrunningsystem.utils.Bot" + uid,  //  保证每次类名不一样
                 addUid(bot.getBotCode(), uid)
         ).create().get();
 
-        Integer direction = botInterface.nextMove(bot.getInput());
+        File file = new File("input.txt");
+
+        try (PrintWriter fout = new PrintWriter(file)){
+            fout.println(bot.getInput());
+            fout.flush();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        Integer direction = botInterface.get();
 
         System.out.println("move-direcion: " + bot.getUserId() + " " + direction);
 
