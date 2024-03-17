@@ -7,6 +7,7 @@ import UserBotIndex from '../views/user/bots/UserBotIndex'
 import NotFound from '../views/error/NotFound'
 import UserAccountLoginView from '@/views/user/account/UserAccountLoginView'
 import UserAccountRegisterView from '@/views/user/account/UserAccountRegisterView'
+import AcwingReceiveCode from '@/views/user/account/AcwingReceiveCode'
 import store from '@/store/index'
 
 const routes = [
@@ -62,6 +63,14 @@ const routes = [
     path: "/error/",
     name: "404NotFound_index",
     component: NotFound,
+    meta: {
+      requestAuth: false,
+    }
+  },
+  {
+    path: "/user/account/acwing/web/receive_code/",
+    name: "account_acwing_web_receive_code",
+    component: AcwingReceiveCode,
     meta: {
       requestAuth: false,
     }
